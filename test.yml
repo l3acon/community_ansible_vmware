@@ -1,0 +1,6 @@
+---
+- name: test
+  hosts: all
+  tasks:
+    - name: just say hi
+      ansible.windows.win_ping:

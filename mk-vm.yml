@@ -1,0 +1,54 @@
+---
+- name: do a thing 
+  hosts: localhost
+  vars:
+    vm_name: againwego
+    vm_template: msws19_clt
+    vm_folder: /Datacenter/vm/matferna
+  tasks:
+    - name: register datacenter
+      community.vmware.vmware_datacenter_info:
+      register: datacenter_info
+
+    - name: debug
+      debug:
+        msg: "{{ datacenter_info }}"
+
+    - name: register cluster
+      community.vmware.vmware_cluster_info:
+        datacenter: "{{ datacenter_info.datacenter_info[0].name }}"
+      register: cluster_info
+
+    - name: debug
+      debug:
+        msg: "{{ cluster_info.clusters | first }}"
+
+#    - name: register folders
+#      community.vmware.vmware_folder_info:
+#        datacenter: "{{ datacenter_info.datacenter_info[0].name }}"
+#      register: folder_info
+#
+#    - name: debug
+#      debug:
+#        msg: "{{ folder_info }}"
+
+    - name:  Clone a virtual machine from Linux template and customize
+      community.vmware.vmware_guest:
+        state: present
+        template: 
+        folder: "{{ vm_folder }}"
+        template: "{{ vm_template }}"
+        name: "{{ vm_name }}"
+        datacenter: "{{ datacenter_info.datacenter_info[0].name }}"
+        cluster: "{{ cluster_info.clusters|first }}"
+        networks: 
+          - name: DSwitch-VM Network
+            type: dhcp
+        customization:
+          password: "{{ lookup('env', 'WIN_PASSWORD') }}"
+          autologon: true
+          autologoncount: 1
+          runonce: "netsh advfirewall set allprofiles state off"
+          dns_servers: "{{ vmware_dns_servers }}"
+          dns_suffix: []
+        wait_for_customization: true
